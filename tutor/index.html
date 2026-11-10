@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="小科老师">
+<meta name="theme-color" content="#0c776c">
+<title>小科老师 · BC Science 10 AI 家教</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a full-height chat app. Header (who + topic chips), scrolling transcript, composer pinned to the bottom.
+   Same teal-on-paper palette and base colours as the Unit 1 handout so the two feel like one product. */
+:root{
+  --paper:#fbfdfc; --surface:#ffffff; --stage:#eef4f2; --ink:#14302e; --muted:#5a7471; --line:#d2dfdc;
+  --accent:#0c776c; --accent-soft:#dbefeb; --on-accent:#ffffff; --warn:#c23a2c; --warn-soft:#fbe5e1;
+  --hl:#fff3c4; --hl-ink:#6b5200; --user:#0c776c; --on-user:#ffffff;
+  --A:#d9443a; --T:#e0aa12; --G:#2b9150; --C:#3367d1;
+  --display:'Bricolage Grotesque','PingFang SC','PingFang TC','Hiragino Sans GB','Microsoft JhengHei','Microsoft YaHei','Noto Sans SC',system-ui,sans-serif;
+  --body:'PingFang SC','PingFang TC','Hiragino Sans GB','Microsoft JhengHei','Microsoft YaHei','Noto Sans SC',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#0d1918; --surface:#132321; --stage:#102320; --ink:#e2eeec; --muted:#93aba7; --line:#25403d;
+  --accent:#43c3b1; --accent-soft:#163c37; --on-accent:#06201d; --warn:#ff7b6b; --warn-soft:#3a1d19;
+  --hl:#3d3413; --hl-ink:#f3d77a; --user:#1f6f66; --on-user:#ffffff; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.75;-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+.app{height:100%;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:820px;margin:0 auto;width:100%}
+
+header{border-bottom:1px solid var(--line);background:var(--paper);flex:none}
+.hrow{display:flex;align-items:center;gap:12px;padding-block:10px 8px}
+.avatar{flex:none;width:40px;height:40px;border-radius:12px;background:var(--accent);display:grid;place-items:center}
+.avatar svg{width:26px;height:26px}
+.who{flex:1;min-width:0}
+.who b{display:block;font:800 19px/1.2 var(--display)}
+.who span{font-size:13px;color:var(--muted)}
+.hbtn{flex:none;font-size:14px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);cursor:pointer;text-decoration:none;color:var(--ink);white-space:nowrap}
+.hbtn:hover{border-color:var(--accent)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-block:2px 10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;font-size:14px;padding:6px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);cursor:pointer;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.chip .en{font-family:var(--display);opacity:.7;font-size:12.5px;margin-left:3px}
+
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.log{display:flex;flex-direction:column;gap:18px;padding-block:20px 28px}
+.notice{font-size:13px;color:var(--muted);text-align:center;margin:0}
+.msg{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.msg.user{justify-content:flex-end}
+.msg .avatar{width:32px;height:32px;border-radius:10px}
+.msg .avatar svg{width:20px;height:20px}
+.bubble{min-width:0;max-width:min(640px,86%);border-radius:18px;padding:12px 16px}
+.user .bubble{background:var(--user);color:var(--on-user);border-bottom-right-radius:6px;white-space:pre-wrap;word-wrap:break-word}
+.user .bubble img{display:block;max-width:100%;max-height:260px;border-radius:10px;margin-bottom:8px}
+.tutor .bubble{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px}
+.md>*:first-child{margin-top:0}.md>*:last-child{margin-bottom:0}
+.md p{margin:0 0 10px}
+.md h1,.md h2,.md h3,.md h4{font-size:17.5px;margin:14px 0 6px;color:var(--accent)}
+.md ul,.md ol{margin:0 0 10px;padding-left:22px}
+.md li{margin-bottom:4px}
+.md strong{color:var(--accent)}
+.md code{font-family:var(--mono);font-size:.92em;background:var(--stage);padding:1px 5px;border-radius:5px}
+.md pre{background:var(--stage);padding:10px 12px;border-radius:10px;overflow-x:auto}
+.md pre code{background:none;padding:0}
+.md blockquote{margin:0 0 10px;padding:6px 12px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 8px 8px 0}
+.md table{border-collapse:collapse;display:block;overflow-x:auto;margin:6px 0 12px;font-size:15px}
+.md th,.md td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+.md th{background:var(--stage)}
+.md hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+.typing{display:inline-flex;gap:5px;padding:6px 2px}
+.typing i{width:8px;height:8px;border-radius:50%;background:var(--muted);animation:b 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.25;transform:none}40%{opacity:1;transform:translateY(-3px)}}
+.follow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.follow button{font-size:14px;padding:6px 12px;border-radius:999px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);cursor:pointer;font-weight:600}
+.err{color:var(--warn);font-size:15px}
+.err button{margin-left:8px;font-size:14px;border:1px solid var(--warn);background:none;border-radius:999px;padding:3px 10px;cursor:pointer;color:var(--warn)}
+
+.hello{display:grid;gap:16px;padding-block:8px}
+.hello h1{font:800 clamp(26px,5vw,34px)/1.25 var(--display);margin:0;text-wrap:balance}
+.hello h1 .seq{font-family:var(--mono);letter-spacing:.12em;font-size:.6em;display:block;margin-top:6px}
+.hello p{margin:0;color:var(--muted);max-width:60ch}
+.starters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.starters{grid-template-columns:1fr}.who span{font-size:12px}}
+.starter{text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:15.5px;line-height:1.5}
+.starter:hover{border-color:var(--accent)}
+.starter small{display:block;color:var(--muted);font-size:12.5px;margin-bottom:2px}
+.tips{font-size:14px;color:var(--muted);background:var(--stage);border-radius:12px;padding:10px 14px}
+.tips b{color:var(--ink)}
+
+footer{flex:none;border-top:1px solid var(--line);background:var(--paper);padding-bottom:env(safe-area-inset-bottom,0px)}
+.comp{padding-block:10px}
+.preview{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.preview img{height:64px;border-radius:8px;border:1px solid var(--line)}
+.preview button{font-size:13px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;cursor:pointer}
+.row{display:flex;gap:8px;align-items:flex-end}
+.iconbtn{flex:none;width:48px;height:48px;border-radius:14px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:24px;height:24px;stroke:var(--ink)}
+.iconbtn:hover{border-color:var(--accent)}
+textarea{flex:1;min-width:0;resize:none;font:inherit;font-size:17px;line-height:1.5;padding:11px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);max-height:180px}
+textarea:focus,button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.send{flex:none;height:48px;padding:0 18px;border-radius:14px;border:0;background:var(--accent);color:var(--on-accent);font-weight:700;cursor:pointer}
+.send[disabled]{opacity:.45;cursor:default}
+.meta{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--muted);margin-top:6px}
+
+.gate{position:fixed;inset:0;z-index:30;background:var(--paper);display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px))}
+.gate .card{max-width:440px;width:100%;display:grid;gap:14px}
+.gate h2{font:800 28px/1.25 var(--display);margin:0}
+.gate p{margin:0;color:var(--muted)}
+.gate input{font:700 20px var(--mono);letter-spacing:.08em;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+.gate .send{width:100%}
+.gate .fine{font-size:13px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="gut">
+    <div class="wrap">
+      <div class="hrow">
+        <div class="avatar" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none"><path d="M7 3c0 7 12 7 12 13s-12 6-12 7M19 3c0 7-12 7-12 13s12 6 12 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M9 7h8M8.5 19h9M11 13h4" stroke="#ffe08a" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <div class="who"><b>小科老师</b><span>BC Science 10 AI 家教 · 我是 AI，不是真人老师</span></div>
+        <a class="hbtn" href="../">讲义</a>
+        <button class="hbtn" id="newChat">新对话</button>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="选择主题"></div>
+    </div>
+  </header>
+
+  <main id="scroller">
+    <div class="wrap gut">
+      <div class="log" id="log" aria-live="polite"></div>
+    </div>
+  </main>
+
+  <footer class="gut">
+    <div class="wrap comp">
+      <div class="preview" id="preview" hidden><img id="pvImg" alt="要发送的图片"><button id="pvDel">删除图片</button></div>
+      <div class="row">
+        <button class="iconbtn" id="photoBtn" aria-label="拍照或选择图片" title="拍照问题目"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2.4h6.8L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.6"/></svg></button>
+        <input type="file" id="file" accept="image/*" hidden>
+        <textarea id="input" rows="1" placeholder="不懂就问，也可以拍照问" aria-label="输入你的问题"></textarea>
+        <button class="send" id="send" disabled>发送</button>
+      </div>
+      <div class="meta"><span id="left"></span><span>答案由 AI 生成，可能出错，重要内容请对照课本</span></div>
+    </div>
+  </footer>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <form class="card" id="gateForm">
+    <div class="avatar" aria-hidden="true" style="width:56px;height:56px;border-radius:16px"><svg viewBox="0 0 26 26" fill="none" style="width:34px;height:34px"><path d="M7 3c0 7 12 7 12 13s-12 6-12 7M19 3c0 7-12 7-12 13s12 6 12 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M9 7h8M8.5 19h9M11 13h4" stroke="#ffe08a" stroke-width="2" stroke-linecap="round"/></svg></div>
+    <h2>你好，我是小科老师</h2>
+    <p>我是一位 AI 科学家教，帮你弄懂 BC Science 10 的内容。请输入家长或老师给你的<b>班级口令</b>。</p>
+    <label for="code" class="fine">班级口令 Access code</label>
+    <input id="code" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+    <p class="err" id="gateErr" hidden></p>
+    <button class="send" type="submit" id="gateBtn">开始提问</button>
+    <p class="fine">我是 AI，不是真人老师，回答可能出错。遇到让你难过或害怕的事，请马上告诉家长或老师。</p>
+  </form>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script>
+(() => {
+const API = (window.TUTOR_CONFIG && window.TUTOR_CONFIG.workerUrl || '').trim();
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k){ try { localStorage.removeItem(k); } catch {} }
+};
+
+const TOPICS = [
+  { id:'all',  zh:'全部',      en:'All',        starters:[
+    ['遗传', '为什么我长得像爸妈，但又不完全一样？'],
+    ['化学', '化学方程式为什么一定要配平？'],
+    ['能量', '能量守恒是什么意思？那为什么手机会没电？'],
+    ['宇宙', '我们怎么知道宇宙在膨胀？']]},
+  { id:'dna',  zh:'遗传与 DNA', en:'Genetics',  starters:[
+    ['碱基配对', '为什么 A 只能和 T 配对，G 只能和 C 配对？'],
+    ['易混词', 'Genotype 和 phenotype 到底有什么区别？'],
+    ['庞氏表', '能一步一步教我画 Bb × Bb 的庞氏表吗？'],
+    ['易错', '为什么不能说细菌"学会了"抗药？']]},
+  { id:'chem', zh:'化学反应',   en:'Chemistry', starters:[
+    ['配平', '教我配平 H₂ + O₂ → H₂O'],
+    ['反应类型', '怎么快速判断一个反应是化合、分解还是置换？'],
+    ['能量', '放热反应和吸热反应怎么区分？举个生活例子'],
+    ['速率', '为什么把药片磨碎后溶解得更快？']]},
+  { id:'energy', zh:'能量',     en:'Energy',    starters:[
+    ['公式', '动能和势能的公式怎么用？出一道题给我练'],
+    ['效率', '为什么效率不可能超过 100%？'],
+    ['核能', '半衰期是什么意思？用一个比喻讲给我听'],
+    ['核能', '核裂变和核聚变有什么不同？']]},
+  { id:'universe', zh:'宇宙',   en:'Universe',  starters:[
+    ['大爆炸', '大爆炸理论有哪些证据？'],
+    ['红移', '红移是什么？为什么它能说明宇宙在膨胀？'],
+    ['恒星', '恒星的一生会经历哪些阶段？'],
+    ['单位', '光年是时间单位还是距离单位？']]}
+];
+const FOLLOW = ['讲简单点', '举个生活中的例子', '出一道题考我', '这些关键词英文怎么写？'];
+
+let topic = store.get('tutor.topic', 'all');
+let history = store.get('tutor.history', []); // [{role, text, image?:bool}]
+let pending = null; // {media_type, data, url}
+let busy = false;
+
+// ---------- topic chips ----------
+const chips = $('#chips');
+function renderChips(){
+  chips.innerHTML = TOPICS.map(t => `<button class="chip" data-id="${t.id}" aria-pressed="${t.id===topic}">${t.zh}<span class="en">${t.en}</span></button>`).join('');
+}
+chips.addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  topic = b.dataset.id; store.set('tutor.topic', topic); renderChips();
+  if (!history.length) renderLog();
+});
+
+// ---------- rendering ----------
+const log = $('#log'), scroller = $('#scroller');
+const avatar = '<div class="avatar" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none"><path d="M7 3c0 7 12 7 12 13s-12 6-12 7M19 3c0 7-12 7-12 13s12 6 12 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M9 7h8M8.5 19h9M11 13h4" stroke="#ffe08a" stroke-width="2" stroke-linecap="round"/></svg></div>';
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function md(text){
+  try { return DOMPurify.sanitize(marked.parse(text, { breaks:true, gfm:true })); }
+  catch { return esc(text).replace(/\n/g,'<br>'); }
+}
+function topicObj(){ return TOPICS.find(t => t.id === topic) || TOPICS[0]; }
+function helloHTML(){
+  const t = topicObj();
+  return `<section class="hello">
+    <h1>不懂就问，我陪你一步一步弄懂。<span class="seq"><b style="color:var(--A)">A</b> <b style="color:var(--T)">T</b> <b style="color:var(--G)">G</b> <b style="color:var(--C)">C</b></span></h1>
+    <p>我是小科老师，专门辅导 BC Science 10。你可以打字问，也可以点左下角的相机<b>拍下题目</b>问我。我会用中文讲清楚，再告诉你考试要写的英文关键词。</p>
+    <div class="starters">${t.starters.map(([k,q]) => `<button class="starter" data-q="${esc(q)}"><small>${k}</small>${esc(q)}</button>`).join('')}</div>
+    <div class="tips"><b>提问小技巧：</b>说清楚你卡在哪里，比如"我知道 A 配 T，但不懂为什么方向相反"。拍作业时，先自己试一试，我会给你提示，不会直接替你写答案。</div>
+  </section>`;
+}
+function msgHTML(m, i, last){
+  if (m.role === 'user') {
+    const img = m.imageUrl ? `<img src="${m.imageUrl}" alt="你发的图片">` : (m.image ? '<div style="opacity:.8;font-size:14px">［图片］</div>' : '');
+    return `<div class="msg user"><div class="bubble">${img}${esc(m.text || '')}</div></div>`;
+  }
+  const follow = last && !busy ? `<div class="follow">${FOLLOW.map(f => `<button data-q="${f}">${f}</button>`).join('')}</div>` : '';
+  return `<div class="msg tutor">${avatar}<div class="bubble"><div class="md">${md(m.text || '')}</div>${follow}</div></div>`;
+}
+function renderLog(){
+  const notice = '<p class="notice">小科老师是 AI。回答可能出错，重要内容请对照课本或问老师。</p>';
+  if (!history.length) { log.innerHTML = helloHTML(); return; }
+  const lastA = history.map(m => m.role).lastIndexOf('assistant');
+  log.innerHTML = notice + history.map((m,i) => msgHTML(m, i, i === lastA && i === history.length-1)).join('');
+  scrollDown();
+}
+function scrollDown(){ requestAnimationFrame(() => { scroller.scrollTop = scroller.scrollHeight; }); }
+log.addEventListener('click', e => {
+  const b = e.target.closest('[data-q]'); if (!b || busy) return;
+  ask(b.dataset.q);
+});
+
+// ---------- composer ----------
+const input = $('#input'), send = $('#send');
+function fit(){ input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 180) + 'px'; }
+function canSend(){ send.disabled = busy || (!input.value.trim() && !pending); }
+input.addEventListener('input', () => { fit(); canSend(); });
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && window.matchMedia('(pointer:fine)').matches) { e.preventDefault(); if (!send.disabled) go(); }
+});
+send.addEventListener('click', go);
+function go(){ ask(input.value.trim()); }
+
+$('#photoBtn').addEventListener('click', () => $('#file').click());
+$('#file').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { pending = await shrink(f); $('#pvImg').src = pending.url; $('#preview').hidden = false; if (!input.value.trim()) input.placeholder = '可以补充一句：哪一步不会？'; canSend(); input.focus(); }
+  catch { alert('这张图片打不开，请换一张试试。'); }
+});
+$('#pvDel').addEventListener('click', () => { pending = null; $('#preview').hidden = true; canSend(); });
+
+// Scale photos down so they upload fast and cost less; Claude reads ~1568px fine.
+function shrink(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const max = 1568, s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      const dataUrl = c.toDataURL('image/jpeg', 0.85);
+      resolve({ media_type:'image/jpeg', data: dataUrl.split(',')[1], url: dataUrl });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+    img.src = url;
+  });
+}
+
+// ---------- talking to the tutor ----------
+function code(){ return store.get('tutor.code', ''); }
+function apiMessages(list){
+  return list.slice(-12).map((m, i, arr) => {
+    if (m.role === 'assistant') return { role:'assistant', content: m.text };
+    const parts = [];
+    if (m.imageData && i === arr.length - 1) parts.push({ type:'image', source:{ type:'base64', media_type:m.imageData.media_type, data:m.imageData.data } });
+    parts.push({ type:'text', text: m.text || (m.image ? '请帮我看看这道题。' : '') });
+    return { role:'user', content: parts };
+  });
+}
+function save(){
+  // Store text only; photos stay in memory for this visit.
+  store.set('tutor.history', history.slice(-40).map(m => ({ role:m.role, text:m.text, image: !!(m.image || m.imageUrl) })));
+}
+
+async function ask(text){
+  if (busy || (!text && !pending)) return;
+  if (!API) { showError('家教后台地址还没设置。请家长打开 tutor/config.js 填入 workerUrl。'); return; }
+  const um = { role:'user', text, image: !!pending };
+  if (pending) { um.imageUrl = pending.url; um.imageData = { media_type: pending.media_type, data: pending.data }; }
+  history.push(um);
+  pending = null; $('#preview').hidden = true; input.value = ''; input.placeholder = '继续问，或者换个问题'; fit();
+  const am = { role:'assistant', text:'' }; history.push(am);
+  busy = true; canSend(); renderLog();
+  const bubble = log.querySelector('.msg.tutor:last-child .md');
+  bubble.innerHTML = '<span class="typing" aria-label="小科老师正在思考"><i></i><i></i><i></i></span>';
+
+  const payload = { messages: apiMessages(history.slice(0, -1)), topic: topic === 'all' ? '' : topicObj().zh };
+  try {
+    const res = await fetch(API, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'X-Access-Code': code() },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      let j = {}; try { j = await res.json(); } catch {}
+      if (j.code === 'bad_code') { store.del('tutor.code'); $('#gate').hidden = false; }
+      throw new Error(j.error || `连接出错（${res.status}），请稍后再试。`);
+    }
+    const left = res.headers.get('X-Questions-Left');
+    if (left !== null) $('#left').textContent = `今天还能问 ${left} 次`;
+    await readStream(res, chunk => { am.text += chunk; bubble.innerHTML = md(am.text); scrollIfNear(); });
+    if (!am.text.trim()) throw new Error('老师没有回答，请再问一次。');
+  } catch (err) {
+    history.pop(); // drop the empty/partial tutor turn
+    const failed = history.pop(); // put the question back so it can be retried
+    busy = false; save(); renderLog();
+    showError(err.message || '网络不太好，请再试一次。', failed);
+    return;
+  }
+  delete um.imageData; // don't resend the photo with later questions
+  busy = false; save(); renderLog(); canSend();
+}
+
+async function readStream(res, onText){
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream:true });
+    let i;
+    while ((i = buf.indexOf('\n\n')) >= 0) {
+      const block = buf.slice(0, i); buf = buf.slice(i + 2);
+      const line = block.split('\n').find(l => l.startsWith('data:'));
+      if (!line) continue;
+      let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
+      if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') onText(ev.delta.text);
+      else if (ev.type === 'error') throw new Error('老师这会儿有点忙，请过一分钟再问。');
+    }
+  }
+}
+function scrollIfNear(){ if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 160) scroller.scrollTop = scroller.scrollHeight; }
+
+function showError(msg, failed){
+  const d = document.createElement('div'); d.className = 'msg tutor';
+  d.innerHTML = `${avatar}<div class="bubble err">${esc(msg)}${failed ? ' <button>重新发送</button>' : ''}</div>`;
+  if (failed) d.querySelector('button').onclick = () => {
+    d.remove();
+    if (failed.imageData) pending = { media_type: failed.imageData.media_type, data: failed.imageData.data, url: failed.imageUrl };
+    ask(failed.text || '');
+  };
+  if (!history.length) log.innerHTML = '';
+  log.appendChild(d); scrollDown(); canSend();
+}
+
+$('#newChat').addEventListener('click', () => {
+  if (busy) return;
+  history = []; save(); pending = null; $('#preview').hidden = true; renderLog(); input.focus();
+});
+
+// ---------- access code gate ----------
+$('#gateForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const c = $('#code').value.trim(); if (!c) return;
+  const btn = $('#gateBtn'), er = $('#gateErr'); er.hidden = true; btn.disabled = true; btn.textContent = '正在检查…';
+  try {
+    if (!API) throw new Error('家教后台地址还没设置。请家长打开 tutor/config.js 填入 workerUrl。');
+    const r = await fetch(API, { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Access-Code': c }, body: JSON.stringify({ ping:true }) });
+    if (!r.ok) { let j = {}; try { j = await r.json(); } catch {} throw new Error(j.error || '暂时连不上，请稍后再试。'); }
+    store.set('tutor.code', c); $('#gate').hidden = true; input.focus();
+  } catch (err) { er.textContent = err.message; er.hidden = false; }
+  btn.disabled = false; btn.textContent = '开始提问';
+});
+
+renderChips(); renderLog(); fit(); canSend();
+if (!code()) { $('#gate').hidden = false; }
+})();
+</script>
+</body>
+</html>
