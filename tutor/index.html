@@ -303,6 +303,13 @@ function shrink(file){
 }
 
 // ---------- talking to the tutor ----------
+const NET_MSG = '连不上家教后台。请检查网络后再试。如果你在中国大陆，家教后台的网址（workers.dev）可能被屏蔽，需要换一个网络环境。';
+async function fetchT(url, opts, ms){
+  const c = new AbortController(); const t = setTimeout(() => c.abort(), ms);
+  try { return await fetch(url, { ...opts, signal: c.signal }); }
+  catch (e) { throw new Error(NET_MSG); }
+  finally { clearTimeout(t); }
+}
 function code(){ return store.get('tutor.code', ''); }
 function apiMessages(list){
   return list.slice(-12).map((m, i, arr) => {
@@ -332,11 +339,11 @@ async function ask(text){
 
   const payload = { messages: apiMessages(history.slice(0, -1)), topic: topic === 'all' ? '' : topicObj().zh };
   try {
-    const res = await fetch(API, {
+    const res = await fetchT(API, {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'X-Access-Code': code() },
       body: JSON.stringify(payload)
-    });
+    }, 30000);
     if (!res.ok) {
       let j = {}; try { j = await res.json(); } catch {}
       if (j.code === 'bad_code') { store.del('tutor.code'); $('#gate').hidden = false; }
@@ -401,7 +408,7 @@ $('#gateForm').addEventListener('submit', async e => {
   const btn = $('#gateBtn'), er = $('#gateErr'); er.hidden = true; btn.disabled = true; btn.textContent = '正在检查…';
   try {
     if (!API) throw new Error('家教后台地址还没设置。请家长打开 tutor/config.js 填入 workerUrl。');
-    const r = await fetch(API, { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Access-Code': c }, body: JSON.stringify({ ping:true }) });
+    const r = await fetchT(API, { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Access-Code': c }, body: JSON.stringify({ ping:true }) }, 15000);
     if (!r.ok) { let j = {}; try { j = await r.json(); } catch {} throw new Error(j.error || '暂时连不上，请稍后再试。'); }
     store.set('tutor.code', c); $('#gate').hidden = true; input.focus();
   } catch (err) { er.textContent = err.message; er.hidden = false; }
