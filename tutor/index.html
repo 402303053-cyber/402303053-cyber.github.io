@@ -45,6 +45,11 @@ header{border-bottom:1px solid var(--line);background:var(--paper);flex:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;font-size:14px;padding:6px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);cursor:pointer;white-space:nowrap}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.quick{display:flex;gap:8px;overflow-x:auto;padding-block:0 10px;scrollbar-width:none}
+.quick::-webkit-scrollbar{display:none}
+.quick button{flex:none;max-width:280px;font-size:13.5px;line-height:1.35;text-align:left;padding:6px 11px;border-radius:10px;border:1px dashed var(--accent);background:var(--accent-soft);color:var(--accent);cursor:pointer;white-space:normal}
+.quick button::before{content:'⚡ ';}
+.ver{opacity:.6}
 .chip .en{font-family:var(--display);opacity:.7;font-size:12.5px;margin-left:3px}
 
 main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -131,6 +136,7 @@ textarea:focus,button:focus-visible,input:focus-visible,a:focus-visible{outline:
         <button class="hbtn" id="newChat">新对话</button>
       </div>
       <div class="chips" id="chips" role="group" aria-label="选择主题"></div>
+      <div class="quick" id="quick" role="group" aria-label="推荐问题"></div>
     </div>
   </header>
 
@@ -149,7 +155,7 @@ textarea:focus,button:focus-visible,input:focus-visible,a:focus-visible{outline:
         <textarea id="input" rows="1" placeholder="不懂就问，也可以拍照问" aria-label="输入你的问题"></textarea>
         <button class="send" id="send" disabled>发送</button>
       </div>
-      <div class="meta"><span id="left"></span><span>答案由 AI 生成，可能出错，重要内容请对照课本</span></div>
+      <div class="meta"><span><span id="left"></span> <span class="ver">版本 11-12b</span></span><span>答案由 AI 生成，可能出错，重要内容请对照课本</span></div>
     </div>
   </footer>
 </div>
@@ -222,16 +228,25 @@ const FOLLOW = ['讲简单点', '举个生活中的例子', '出一道题考我'
 let topic = store.get('tutor.topic', 'all');
 let history = store.get('tutor.history', []); // [{role, text, image?:bool}]
 let pending = null; // {media_type, data, url}
+let online = null;   // null = 还不知道, true/false = 能否连上 AI 老师
 let busy = false;
 
 // ---------- topic chips ----------
 const chips = $('#chips');
+function renderQuick(){
+  const t = topicObj();
+  document.getElementById('quick').innerHTML = t.starters.map(([k,q]) => `<button data-q="${esc(q)}">${esc(q)}</button>`).join('');
+}
+document.getElementById('quick').addEventListener('click', e => {
+  const b = e.target.closest('[data-q]'); if (!b) return;
+  ask(b.dataset.q);
+});
 function renderChips(){
   chips.innerHTML = TOPICS.map(t => `<button class="chip" data-id="${t.id}" aria-pressed="${t.id===topic}">${t.zh}<span class="en">${t.en}</span></button>`).join('');
 }
 chips.addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
-  topic = b.dataset.id; store.set('tutor.topic', topic); renderChips();
+  topic = b.dataset.id; store.set('tutor.topic', topic); renderChips(); renderQuick();
   if (!history.length) renderLog();
 });
 
@@ -339,12 +354,13 @@ function save(){
 }
 
 async function ask(text){
-  if (busy || (!text && !pending)) return;
-  if (!pending && FAQ[text]) { // 预先写好的答案：秒出、不联网、不花钱
+  if (!pending && FAQ[text] && !busy) { // 预先写好的答案：秒出、不联网、不花钱
     history.push({ role:'user', text }, { role:'assistant', text: FAQ[text], faq:true });
     input.value = ''; fit(); save(); renderLog(); canSend(); return;
   }
+  if (busy || (!text && !pending)) return;
   if (!API) { showError('家教后台地址还没设置。请家长打开 tutor/config.js 填入 workerUrl。'); return; }
+  if (online === false) { showError(NET_MSG + ' 顶部的⚡推荐问题不用联网，可以直接点。'); checkNet(); return; }
   const um = { role:'user', text, image: !!pending };
   if (pending) { um.imageUrl = pending.url; um.imageData = { media_type: pending.media_type, data: pending.data }; }
   history.push(um);
@@ -360,7 +376,7 @@ async function ask(text){
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'X-Access-Code': code() },
       body: JSON.stringify(payload)
-    }, 30000);
+    }, online === true ? 30000 : 12000);
     if (!res.ok) {
       let j = {}; try { j = await res.json(); } catch {}
       if (j.code === 'bad_code') { store.del('tutor.code'); $('#gate').hidden = false; }
@@ -371,6 +387,7 @@ async function ask(text){
     await readStream(res, chunk => { am.text += chunk; bubble.innerHTML = md(am.text); scrollIfNear(); });
     if (!am.text.trim()) throw new Error('老师没有回答，请再问一次。');
   } catch (err) {
+    if (err.message === NET_MSG) { online = false; netbar.hidden = false; }
     history.pop(); // drop the empty/partial tutor turn
     const failed = history.pop(); // put the question back so it can be retried
     busy = false; save(); renderLog();
@@ -436,7 +453,6 @@ $('#gateForm').addEventListener('submit', async e => {
   btn.disabled = false; btn.textContent = '开始提问';
 });
 
-let online = null;
 const netbar = document.createElement('p'); netbar.className = 'netbar'; netbar.hidden = true;
 netbar.textContent = '现在连不上 AI 老师（网络问题）。推荐问题仍然可以直接看答案；其他问题等网络好了再问。';
 document.querySelector('header .wrap').appendChild(netbar);
@@ -445,7 +461,7 @@ function checkNet(){
   fetchT(API, { method:'GET' }, 8000).then(r => { online = r.ok; netbar.hidden = online; })
     .catch(() => { online = false; netbar.hidden = false; });
 }
-renderChips(); renderLog(); fit(); canSend(); checkNet();
+renderChips(); renderQuick(); renderLog(); fit(); canSend(); checkNet();
 if (!code()) { $('#gate').hidden = false; }
 })();
 </script>
