@@ -130,7 +130,6 @@ details .ans{background:var(--ok-soft);border-radius:10px;padding:10px 14px;marg
 .panel .close{float:right;font:600 15px var(--body);border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;cursor:pointer;color:var(--ink)}
 .score{background:var(--hl);border-radius:16px;padding:16px 20px;margin:24px 0;font-size:17px}
 .score b{font-size:22px;color:var(--hl-ink)}
-.tocbtn.ask{text-decoration:none;background:var(--accent);border-color:var(--accent);color:#fff;white-space:nowrap;display:inline-flex;align-items:center}
 .ext-badge{display:inline-block;font:700 12px var(--mono);background:var(--accent-soft);color:var(--accent);padding:2px 10px;border-radius:999px;margin-left:6px;vertical-align:middle}
 /* widgets */
 .seg{display:inline-flex;flex-wrap:wrap;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
@@ -183,7 +182,7 @@ input[type=range]{width:100%;height:36px;accent-color:var(--accent)}
 @media (max-width:560px){body{font-size:16px}.bigrule{font-size:20px}.brand{display:none}.eq{font-size:16px}.sp .fm{font-size:17px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body>
-<header class="topbar"><div class="in"><span class="brand">Unit 2 <b>化学</b></span><span class="where" id="where"></span><a class="tocbtn ask" href="tutor/" onclick="try{localStorage.setItem('tutor.topic',JSON.stringify('chem'))}catch(e){}">问老师</a><button class="tocbtn" id="tocBtn">目录</button></div><div class="prog"><i id="progbar"></i></div></header>
+<header class="topbar"><div class="in"><span class="brand">Unit 2 <b>化学</b></span><span class="where" id="where"></span><button class="tocbtn" id="tocBtn">目录</button></div><div class="prog"><i id="progbar"></i></div></header>
 <div class="drawer" id="drawer" hidden><div class="panel"><button class="close" id="tocClose">关闭</button><h3>目录 Contents</h3><div class="pct" id="pct"></div><div id="tocList"></div><p style="margin-top:20px"><button class="btn" id="resetBtn">清空学习记录</button></p></div></div>
 <main class="reader">
 <section class="lesson" id="start" data-ch="开始" data-title="开学第一课：你身边的化学魔术">
@@ -219,7 +218,7 @@ input[type=range]{width:100%;height:36px;accent-color:var(--accent)}
 <tr><td><b>Topic 2.2</b> 原子在反应中做了什么</td><td>原子怎样"交朋友"组成新物质；化学式和方程式怎么读、怎么写</td></tr>
 <tr><td><b>Topic 2.3</b> 能量去哪儿了</td><td>为什么有的反应让东西变热、有的变冷</td></tr>
 <tr><td><b>Topic 2.4</b> 反应的六种套路</td><td>千千万万个反应，其实只有几种"套路"；酸和碱是怎么回事</td></tr></table>
-<div class="tip"><span class="who">怎么用这份讲义</span><div>一课一页，大约 10 分钟。每课都有图、有可以自己动手的动画，最后有一道小测验。每个关卡开头有一个"导读"讲故事，结尾有课本的复习题，学完再做。右上角"目录"可以跳到任何一课，进度会自动保存在这台 iPad 上。看不懂的地方，点右上角的<b>"问老师"</b>，AI 家教小科老师随时回答你，也可以拍照问作业。</div></div>
+<div class="tip"><span class="who">怎么用这份讲义</span><div>一课一页，大约 10 分钟。每课都有图、有可以自己动手的动画，最后有一道小测验。每个关卡开头有一个"导读"讲故事，结尾有课本的复习题，学完再做。右上角"目录"可以跳到任何一课，进度会自动保存在这台 iPad 上。</div></div>
 <p class="note">本讲义配合 BC Science Connections 10 课本 Unit 2（第 96–179 页）使用。</p>
 </section>
 <section class="lesson" id="plan" data-ch="开始" data-title="两周学习计划">
